@@ -1,3 +1,5 @@
+const lodashClonedeep = require('lodash.clonedeep')
+
 function coeffs_x_y(x1,y1,x2,y2){
   // calcul des coefficients
   var trip_r_coeff = 5; // param de jacques
@@ -23,59 +25,36 @@ function coeffs_x_y(x1,y1,x2,y2){
   return [cx,cy];
 }
 
-function creation_json (sql, nom_fich, type_objet, nb_class=1){
-
-    /*
-    requete sql
-    cur = conn.cursor()
-    cur.execute(sql)
-    */
+function creation_json (raw, nom_fich, type_objet, nb_class=1){
 
     var list_arc = [];
     var dict_node = {};
-    var raw = 1;// ligne suivante de la requete
-
-    var id_path = raw[0];
-    var id_start_end = (raw[2],raw[3]);
-    var [id_dep, id_arr] = [raw[2], raw[3]];
-
-    var [x1, y1] = [raw[6], raw[5]];
-    var [x2, y2] = [raw[7], raw[8]];
-    var [cx, cy] = coeffs_x_y(x1,y1,x2,y2);
 
     var trip_template = [];
     for (var i = 0; i < nb_class.length; i++) {
       trip_template.push({id:i, nb:0});
     }
 
-    json_arc = {id:id_path,
-                id_dep:id_dep,
-                id_arr:id_arr,
-                x1:x1,
-                y1:y1,
-                x2:x2,
-                y2:y2,
-                xc_origin:Math.min(x2,x1) + Math.abs(x2-x1)/2,
-                yc_origin:Math.min(y2,y1) + Math.abs(y2-y1)/2,
-                xc_coeff:cx,
-                yc_coeff:cy,
-                nb_trip:0,
-                list_graph_trip:trip_template
-              };
+    var raw = "A DEFINIR"; // donner la ligne suivante
+
+    var [id_dep, id_arr] = [-1,-1];
 
     while raw {
       var id_start_end = [raw[2],raw[3]];
 
       if (id_start_end != [id_dep,id_arr]){
 
+          try {
+              list_arc.push(json_arc);
+          }
+
           var id_path = raw[0];
-          var [id_dep, id_arr] = [raw[2], raw[3]];
+          var [id_dep, id_arr] = id_start_end;
 
           var [x1,y1] = [raw[5],raw[6]];
           var [x2,y2] = [raw[7],raw[8]];
           var [cx,cy] = coeffs_x_y(x1,y1,x2,y2);
 
-          list_arc.push(json_arc);
           var json_arc = {id:id_path,
                           id_dep:id_dep,
                           id_arr:id_arr,
@@ -88,7 +67,7 @@ function creation_json (sql, nom_fich, type_objet, nb_class=1){
                           xc_coeff:cx,
                           yc_coeff:cy,
                           nb_trip:0,
-                          list_graph_trip:trip_template
+                          list_graph_trip:lodashClonedeep(trip_template)
                         };
       }
 
@@ -111,51 +90,21 @@ function creation_json (sql, nom_fich, type_objet, nb_class=1){
                                     x:x,
                                     y:y,
                                     a_coeff:200,
-                                    'nb_trip_dep':0,
-                                    'nb_trip_arr':0,
-                                    'list_graph_dep':trip_template,
-                                    'list_graph_arr':trip_template
+                                    nb_trip_dep:0,
+                                    nb_trip_arr:0,
+                                    list_graph_dep:lodashClonedeep(trip_template),
+                                    list_graph_arr:lodashClonedeep(trip_template)
                                   }
           }
 
           dict_node[id_node]['nb_trip_'+direction] += nb_trip;
-          dict_node[id_node]['list_graph_'+direction][id_class]['nb'] += nb_trip;
+          dict_node[id_node]['list_graph_'+direction][id_class].nb += nb_trip;
       }
-
-      //raw = cur.fetchone()
+      raw = "A DEFINIR" // donner la ligne suivante
     }
+
 
     var fs = require('fs');
     fs.writeFile(nom_fich+"_arc.json", JSON.stringify({table:list_arc}));
     fs.writeFile(nom_fich+"_node.json", JSON.stringify({table:Object.values(dict_node)}));
 }
-
-hours_stamp = [0,6,12,16,24]
-
-var sql = ""
-
-for (var i = 0; i < hours_stamp.length; i++) {
-  sql += 'SELECT id,COUNT(id) as nombre,start_iris,end_iris, '+str(i)+' as classe, start_longitude, start_latitude, end_longitude, end_latitude '
-  sql += 'FROM mise_en_prod.jointure_iris '
-  sql += 'WHERE date_part('hour', to_timestamp(startsecond)) BETWEEN '+str(hours_stamp[i])+' AND '+str(hours_stamp[i+1])+' '
-  sql += 'GROUP BY id,start_iris,end_iris, start_longitude, start_latitude, end_longitude, end_latitude '
-  sql += 'UNION '
-}
-
-sql = sql[:-9 ] + ' ORDER BY start_iris,end_iris, classe'
-nom_fich = "data_sous_district"
-type_objet = "sous_district"
-
-// Connection à la BDD
-conn = psycopg2.connect(
-    user = "postgres",
-    password = "postgres",
-    host = "HP1706W117",
-    port = "5432",
-    database = "bike"
-)
-// Execution de la requete
-cur = conn.cursor()
-cur.execute(sql)
-
-creation_json(sql,nom_fich,type_objet,4)
