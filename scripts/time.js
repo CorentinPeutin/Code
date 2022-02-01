@@ -11,7 +11,7 @@ function define_temporal_where(time_classes){
 
     /*
     version alternative :
-    where = "WHERE "+str(class_dict.field)+" = "+str(class_dict.value)+"";
+    where = "WHERE "+str(class_dict.field)+" = "+str(class_dict.value);
     */
 
     list_where.push(where);
