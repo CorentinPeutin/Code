@@ -3,7 +3,7 @@ var zoom_levels = ["hexa", "iris", "sous_district", "district"];
 
 function define_zoom_intervals(scale_list, zoom_levels){
   // conversion d'échelle carto à échelle leaflet
-  return zoom_intervals
+  return zoom_intervals;
 }
 
 function get_zoom_level(leaflet_zoom, zoom_intervals, zoom_levels){
